@@ -800,13 +800,13 @@ export default function Home() {
 
       {/* 浮动按钮：下载最新源码 zip（含 Cloudflare 适配），用于本地推送到 GitHub */}
       <a
-        href="/api/repo-download?XTransformPort=3000"
+        href="https://github.com/104-momo/score-distributor" target="_blank" rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-emerald-600/30 transition hover:scale-105 hover:shadow-emerald-600/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         title="下载最新源码（含 Cloudflare 适配），解压后推送到 GitHub"
       >
         <Github className="h-4 w-4" />
-        <span className="hidden sm:inline">下载新版源码（含 Cloudflare 适配）</span>
-        <span className="sm:hidden">新版源码</span>
+        <span className="hidden sm:inline">在 GitHub 查看源码</span>
+        <span className="sm:hidden">源码</span>
       </a>
     </div>
   );
