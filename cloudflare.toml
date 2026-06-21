@@ -1,27 +1,12 @@
-# Cloudflare Pages 部署配置
-# 本文件被 Cloudflare Pages 自动识别
-
 [build]
-# 构建命令 - 标准 Next.js 构建
 command = "npx @cloudflare/next-on-pages@1"
-# 构建产物目录
 output_directory = ".vercel/output/static"
 
 [build.environment]
-# Node 版本
 NODE_VERSION = "20"
-# 跳过 Prisma 生成 (本项目未使用数据库)
-SKIP_PRISMA_GENERATE = "true"
-# Next.js 优化
 NEXT_TELEMETRY_DISABLED = "1"
 
-# 静态资源缓存策略
 [[headers]]
 for = "/_next/static/*"
 [headers.values]
 Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-for = "/favicon.ico"
-[headers.values]
-Cache-Control = "public, max-age=86400"
