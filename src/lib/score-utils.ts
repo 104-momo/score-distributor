@@ -271,12 +271,76 @@ export function calculateScores(
   // 平时总成绩(百分制) 取整
   const usualPercent = Math.round((usualTotal / 30) * 100);
 
+  // ===== 平时分低于60时自动提升到60 =====
+  if (usualPercent < 60) {
+    const targetTotal = 18; // ceil(60 / 100 * 30), 需至少18分才能达到平时分60
+    let remaining = targetTotal - usualTotal;
+
+    if (remaining > 0) {
+      // 所有子项及其当前值、上限
+      const boostItems: { key: keyof SubScoreItems; current: number; max: number }[] = [
+        { key: 'attendance', current: scores.attendance, max: ITEM_MAX.attendance },
+        { key: 'classParticipation', current: scores.classParticipation, max: ITEM_MAX.classParticipation },
+        { key: 'notes', current: scores.notes, max: ITEM_MAX.notes },
+        { key: 'quiz', current: scores.quiz, max: ITEM_MAX.quiz },
+        { key: 'hw1', current: scores.hw1, max: ITEM_MAX.hw1 },
+        { key: 'hw2', current: scores.hw2, max: ITEM_MAX.hw2 },
+        { key: 'hw3', current: scores.hw3, max: ITEM_MAX.hw3 },
+        { key: 'hw4', current: scores.hw4, max: ITEM_MAX.hw4 },
+      ];
+
+      while (remaining > 0) {
+        const available = boostItems.filter(i => i.current < i.max);
+        if (available.length === 0) break;
+
+        const totalRemaining = available.reduce((s, i) => s + (i.max - i.current), 0);
+        if (totalRemaining <= 0) break;
+
+        let allocatedThisRound = 0;
+        for (const item of available) {
+          const capacity = item.max - item.current;
+          if (capacity <= 0) continue;
+          const share = Math.min(capacity, Math.max(1, Math.round((capacity / totalRemaining) * remaining)));
+          if (share > 0) {
+            (scores as unknown as Record<string, number>)[item.key] += share;
+            item.current += share;
+            remaining -= share;
+            allocatedThisRound += share;
+          }
+        }
+        if (allocatedThisRound === 0) break;
+      }
+    }
+  }
+
+  // 确保所有子项不超过上限（经过可能的提升后）
+  const finalAttendance = Math.min(scores.attendance, ITEM_MAX.attendance);
+  const finalClassParticipation = Math.min(scores.classParticipation, ITEM_MAX.classParticipation);
+  const finalNotes = Math.min(scores.notes, ITEM_MAX.notes);
+  const finalQuiz = Math.min(scores.quiz, ITEM_MAX.quiz);
+  const finalHw1 = Math.min(scores.hw1, ITEM_MAX.hw1);
+  const finalHw2 = Math.min(scores.hw2, ITEM_MAX.hw2);
+  const finalHw3 = Math.min(scores.hw3, ITEM_MAX.hw3);
+  const finalHw4 = Math.min(scores.hw4, ITEM_MAX.hw4);
+
+  const finalClassActivityTotal = finalClassParticipation + finalNotes + finalQuiz;
+  const finalAfterClassTotal = finalHw1 + finalHw2 + finalHw3 + finalHw4;
+  const finalUsualTotal = finalAttendance + finalClassActivityTotal + finalAfterClassTotal;
+  const finalUsualPercent = Math.max(60, Math.round((finalUsualTotal / 30) * 100));
+
   return {
-    ...scores,
-    classActivityTotal,
-    afterClassTotal,
-    usualTotal,
-    usualPercent,
+    attendance: finalAttendance,
+    classParticipation: finalClassParticipation,
+    notes: finalNotes,
+    quiz: finalQuiz,
+    hw1: finalHw1,
+    hw2: finalHw2,
+    hw3: finalHw3,
+    hw4: finalHw4,
+    classActivityTotal: finalClassActivityTotal,
+    afterClassTotal: finalAfterClassTotal,
+    usualTotal: finalUsualTotal,
+    usualPercent: finalUsualPercent,
     compositeScore: Math.round(compositeScore),
   };
 }
@@ -417,9 +481,15 @@ export function recalculateRecord(
   // 平时总成绩(百分制) 取整
   const usualPercent = Math.round((usualTotal / 30) * 100);
 
+  // 平时分低于60时自动提升到60
+  const boostedUsualPercent = Math.max(60, usualPercent);
+
+  // 如果平时分被提升，则总评成绩需要使用提升后的平时分
+  const effectiveUsualPercent = boostedUsualPercent;
+
   let totalScore: number | null = null;
   if (config.calculateTotal && record.midterm != null) {
-    const usualPart = usualPercent * config.usualWeight;
+    const usualPart = effectiveUsualPercent * config.usualWeight;
     const midtermPart = record.midterm * config.midtermWeight;
     const finalPart = (record.final ?? 0) * config.finalWeight;
     // 总评成绩取整
@@ -441,7 +511,7 @@ export function recalculateRecord(
     classActivityTotal,
     afterClassTotal,
     usualTotal,
-    usualPercent,
+    usualPercent: effectiveUsualPercent,
     totalScore,
     grade,
   };
